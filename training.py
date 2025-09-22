@@ -55,12 +55,12 @@ class IdempotentNetwork(pl.LightningModule):
         return self.inference_step(batch=batch, type="train")
 
     def validation_step(self, batch, batch_idx):
-        self.inference_step(batch=batch, type="validation")
+        self.inference_step(batch=batch, type="val")
 
     def test_step(self, batch, batch_idx):
         self.inference_step(batch=batch, type="test")
 
-    def inference_step(self, batch, type="validation"):
+    def inference_step(self, batch, type="val"):
         l_rec, l_idem, l_tight = self.get_losses(batch)
         loss = l_rec + l_idem + l_tight
 
