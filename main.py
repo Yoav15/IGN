@@ -15,6 +15,12 @@ we will need the following modules:
 2) model
 3) training + inference pipeline
 4) plots and evaluation
+
+TODO: what is still missing:
+
+1) logging plots along training
+2) evaluating final model and different domains
+
 """
 
 import os
