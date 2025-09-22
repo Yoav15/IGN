@@ -102,7 +102,7 @@ def main(args):
             )
         ]
         trainer = pl.Trainer(
-            accelerator="cpu",
+            accelerator="auto",
             max_epochs=args["epochs"],
             logger=logger,
             callbacks=callbacks,
@@ -110,7 +110,7 @@ def main(args):
         trainer.fit(model, train_loader, val_loader)
 
     # Loading the best model
-    device = "cpu"  # "cuda" if torch.cuda.is_available() else "cpu"
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     model = (
         IdempotentNetwork.load_from_checkpoint(
             "checkpoints/best.ckpt", prior=prior, model=net
