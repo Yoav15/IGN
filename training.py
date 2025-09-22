@@ -52,48 +52,29 @@ class IdempotentNetwork(pl.LightningModule):
         return l_rec, l_idem, l_tight
 
     def training_step(self, batch, batch_idx):
+        return self.inference_step(batch=batch, type="train")
+
+    def validation_step(self, batch, batch_idx):
+        self.inference_step(batch=batch, type="validation")
+
+    def test_step(self, batch, batch_idx):
+        self.inference_step(batch=batch, type="test")
+
+    def inference_step(self, batch, type="validation"):
         l_rec, l_idem, l_tight = self.get_losses(batch)
         loss = l_rec + l_idem + l_tight
 
         self.log_dict(
             {
-                "train/loss_rec": l_rec,
-                "train/loss_idem": l_idem,
-                "train/loss_tight": l_tight,
-                "train/loss": l_rec + l_idem + l_tight,
+                f"{type}/loss_rec": l_rec,
+                f"{type}/loss_idem": l_idem,
+                f"{type}/loss_tight": l_tight,
+                f"{type}/loss": loss,
             },
             sync_dist=True,
         )
 
         return loss
-
-    def validation_step(self, batch, batch_idx):
-        l_rec, l_idem, l_tight = self.get_losses(batch)
-        loss = l_rec + l_idem + l_tight
-
-        self.log_dict(
-            {
-                "val/loss_rec": l_rec,
-                "val/loss_idem": l_idem,
-                "val/loss_tight": l_tight,
-                "val/loss": loss,
-            },
-            sync_dist=True,
-        )
-
-    def test_step(self, batch, batch_idx):
-        l_rec, l_idem, l_tight = self.get_losses(batch)
-        loss = l_rec + l_idem + l_tight
-
-        self.log_dict(
-            {
-                "test/loss_rec": l_rec,
-                "test/loss_idem": l_idem,
-                "test/loss_tight": l_tight,
-                "test/loss": loss,
-            },
-            sync_dist=True,
-        )
 
     def generate_n(self, n, device=None):
         z = self.prior.sample_n(n)
