@@ -38,7 +38,7 @@ class IdempotentNetwork(pl.LightningModule):
 
     def get_losses(self, x):
         # Prior samples
-        z = self.prior.sample_n(x.shape[0]).to(x.device)
+        z = self.prior.sample((x.shape[0],)).to(x.device)
 
         # Updating the copy
         self.model_copy.load_state_dict(self.model.state_dict())
@@ -98,7 +98,7 @@ class IdempotentNetwork(pl.LightningModule):
         return fx, loss
 
     def generate_n(self, n, device=None):
-        z = self.prior.sample_n((n,))
+        z = self.prior.sample((n,))
 
         if device is not None:
             z = z.to(device)
