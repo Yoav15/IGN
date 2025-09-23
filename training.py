@@ -3,6 +3,7 @@ from copy import deepcopy
 from torch.optim import Adam
 from torch.nn import L1Loss
 import pytorch_lightning as pl
+from visual import show_input_output_pairs
 
 
 class IdempotentNetwork(pl.LightningModule):
@@ -57,9 +58,12 @@ class IdempotentNetwork(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         self.inference_step(batch=batch, type="val")
 
+        fig = show_input_output_pairs(model=self.model, batch=batch, nrows=4, ncols=4)
+        # using .log in the trainer
+        self.log(name="input output pairs", value=fig)
+
     def test_step(self, batch, batch_idx):
         self.inference_step(batch=batch, type="test")
-        from visual import show_input_output_pairs
 
         fig = show_input_output_pairs(model=self.model, batch=batch, nrows=4, ncols=4)
         # using .log in the trainer
@@ -82,7 +86,7 @@ class IdempotentNetwork(pl.LightningModule):
         return loss
 
     def generate_n(self, n, device=None):
-        z = self.prior.sample_n(n)
+        z = self.prior.sample_n((n,))
 
         if device is not None:
             z = z.to(device)
