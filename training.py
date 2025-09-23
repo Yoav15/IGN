@@ -73,10 +73,7 @@ class IdempotentNetwork(pl.LightningModule):
 
         logger = getattr(self, "logger", None)
         if logger is not None and hasattr(logger, "experiment"):
-            logger.experiment.log(
-                {f"val/generated_samples_{self.current_epoch}": wandb.Image(fig)},
-                step=self.current_epoch,
-            )
+            logger.experiment.log({f"val/generated_samples": wandb.Image(fig)})
         self.validation_step_outputs.clear()
 
     def test_step(self, batch, batch_idx):
