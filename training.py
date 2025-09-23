@@ -1,9 +1,10 @@
 from copy import deepcopy
-
+import torch
 from torch.optim import Adam
 from torch.nn import L1Loss
 import pytorch_lightning as pl
-from visual import show_input_output_pairs
+from visual import _show_input_output_pairs
+import wandb
 
 
 class IdempotentNetwork(pl.LightningModule):
@@ -50,27 +51,32 @@ class IdempotentNetwork(pl.LightningModule):
         l_idem = self.lidem_w * self.criterion(self.model_copy(fz), fz)
         l_tight = -self.ltight_w * self.criterion(self(fzd), fzd)
 
-        return l_rec, l_idem, l_tight
+        return fx, l_rec, l_idem, l_tight
 
     def training_step(self, batch, batch_idx):
-        return self.inference_step(batch=batch, type="train")
+        _, loss = self.inference_step(batch=batch, type="train")
+        return loss
 
     def validation_step(self, batch, batch_idx):
-        self.inference_step(batch=batch, type="val")
+        fx, loss = self.inference_step(batch=batch, type="val")
+        return {"loss": loss, "input": batch, "output": fx}
 
-        fig = show_input_output_pairs(model=self.model, batch=batch, nrows=4, ncols=4)
-        # using .log in the trainer
-        self.log(name="input output pairs", value=fig)
+    def validation_epoch_end(self, outputs):
+        inputs = torch.cat([out["input"] for out in outputs], dim=0)
+        outputs = torch.cat([out["output"] for out in outputs], dim=0)
+        fig = _show_input_output_pairs(inputs=inputs, outputs=outputs, nrows=4, ncols=4)
+
+        logger = getattr(self, "logger", None)
+        if logger is not None and hasattr(logger, "experiment"):
+            logger.experiment.log(
+                {"val/generated_samples": wandb.Image(fig)}, step=self.current_epoch
+            )
 
     def test_step(self, batch, batch_idx):
         self.inference_step(batch=batch, type="test")
 
-        fig = show_input_output_pairs(model=self.model, batch=batch, nrows=4, ncols=4)
-        # using .log in the trainer
-        self.log(name="input output pairs", value=fig)
-
     def inference_step(self, batch, type="val"):
-        l_rec, l_idem, l_tight = self.get_losses(batch)
+        fx, l_rec, l_idem, l_tight = self.get_losses(batch)
         loss = l_rec + l_idem + l_tight
 
         self.log_dict(
@@ -83,7 +89,7 @@ class IdempotentNetwork(pl.LightningModule):
             sync_dist=True,
         )
 
-        return loss
+        return fx, loss
 
     def generate_n(self, n, device=None):
         z = self.prior.sample_n((n,))
