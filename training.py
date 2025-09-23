@@ -59,6 +59,11 @@ class IdempotentNetwork(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         self.inference_step(batch=batch, type="test")
+        from visual import show_input_output_pairs
+
+        fig = show_input_output_pairs(model=self.model, batch=batch, nrows=4, ncols=4)
+        # using .log in the trainer
+        self.log(name="input output pairs", value=fig)
 
     def inference_step(self, batch, type="val"):
         l_rec, l_idem, l_tight = self.get_losses(batch)

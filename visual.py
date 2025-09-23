@@ -30,16 +30,25 @@ def run_inference(model, batch):
 
 
 def show_input_output_pairs(
-    model: torch.nn.Module, dataloader: DataLoader, nrows=3, ncols=3
+    model: torch.nn.Module,
+    dataloader: DataLoader | None = None,
+    batch: torch.Tensor | None = None,
+    nrows=3,
+    ncols=3,
 ):
+    if batch is None and dataloader is None:
+        raise RuntimeError("cant show input output pairs without data")
+
     # 1. Get batch
-    batch = sample_batch(dataloader, device="cpu")
+    if batch is None:
+        batch = sample_batch(dataloader, device="cpu")
 
     # 2. Run model
     outputs = run_inference(model, batch)
 
     # 3. Visualize
-    _show_input_output_pairs(batch, outputs, nrows=nrows, ncols=ncols)
+    fig = _show_input_output_pairs(batch, outputs, nrows=nrows, ncols=ncols)
+    return fig
 
 
 def _show_input_output_pairs(inputs, outputs, nrows=4, ncols=4, normalize=False):
@@ -96,5 +105,4 @@ def _show_input_output_pairs(inputs, outputs, nrows=4, ncols=4, normalize=False)
 
             idx += 1
 
-    plt.tight_layout()
-    plt.show()
+    return fig

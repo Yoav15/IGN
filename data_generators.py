@@ -67,4 +67,4 @@ if __name__ == "__main__":
 
     model = DCGANLikeModel()
 
-    show_input_output_pairs(model, dataloader, 4, 4)
+    show_input_output_pairs(model, dataloader, nrows=4, ncols=4)
