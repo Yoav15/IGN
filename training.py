@@ -27,6 +27,7 @@ class IdempotentNetwork(pl.LightningModule):
         self.lrec_w = lrec_w
         self.lidem_w = lidem_w
         self.ltight_w = ltight_w
+        self.validation_step_outputs = []
 
     def forward(self, x):
         return self.model(x)
@@ -58,12 +59,16 @@ class IdempotentNetwork(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        fx, loss = self.inference_step(batch=batch, type="val")
-        return {"loss": loss, "input": batch, "output": fx}
+        fx, _ = self.inference_step(batch=batch, type="val")
+        self.validation_step_outputs.append({"input": batch, "output": fx})
 
-    def validation_epoch_end(self, outputs):
-        inputs = torch.cat([out["input"] for out in outputs], dim=0)
-        outputs = torch.cat([out["output"] for out in outputs], dim=0)
+    def on_validation_epoch_end(self):
+        inputs = torch.cat(
+            [out["input"] for out in self.validation_step_outputs], dim=0
+        )
+        outputs = torch.cat(
+            [out["output"] for out in self.validation_step_outputs], dim=0
+        )
         fig = _show_input_output_pairs(inputs=inputs, outputs=outputs, nrows=4, ncols=4)
 
         logger = getattr(self, "logger", None)
@@ -71,6 +76,7 @@ class IdempotentNetwork(pl.LightningModule):
             logger.experiment.log(
                 {"val/generated_samples": wandb.Image(fig)}, step=self.current_epoch
             )
+        self.validation_step_outputs.clear()
 
     def test_step(self, batch, batch_idx):
         self.inference_step(batch=batch, type="test")
